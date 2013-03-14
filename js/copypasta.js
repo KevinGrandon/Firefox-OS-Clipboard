@@ -1,13 +1,13 @@
-(function initCopyPaste(){
+(function initCopyPaste() {
 
   /**
    * Copy/Paste base class
    */
   function CopyPaste() {
-
-    this.rangeHelper = new RangeHelper();
-
     this.clipboard = '';
+
+    this.MENU_ADJUST_TOP = -45;
+    this.MENU_ADJUST_LEFT = 20;
 
     this.INTERACT_DELAY = 700;
     this.TOUCH_BOUND = 50;
@@ -25,7 +25,7 @@
     },
 
     onStart: function(e) {
-      dump('GOT TOUCH START' + e)
+      dump('GOT TOUCH START' + e);
 
       if (this.controlsShown) {
         this.teardown();
@@ -44,9 +44,9 @@
     onMove: function(e) {
       var xy = this.coords(e);
 
-      if ( !this.controlsShown && (
+      if (!this.controlsShown && (
           Math.abs(this.startXY.x - xy.x) > this.TOUCH_BOUND ||
-          Math.abs(this.startXY.y - xy.y) > this.TOUCH_BOUND) ) {
+          Math.abs(this.startXY.y - xy.y) > this.TOUCH_BOUND)) {
         this.teardown();
       }
 
@@ -68,20 +68,14 @@
       var target = this.startE.target;
 
       if (target instanceof HTMLInputElement) {
-        target.select();
-        var sel = window.getSelection();
-        var newRange = document.createRange();
-        newRange.selectNode(target);
-        sel.addRange(newRange);
+        this.strategy = new HtmlInputStrategy(target);
       } else if (target instanceof HTMLTextAreaElement) {
-        target.select();
-        var sel = window.getSelection();
-        var newRange = document.createRange();
-        newRange.selectNode(target);
-        sel.addRange(newRange);
+        this.strategy = new HtmlInputStrategy(target);
       } else {
-        window.getSelection().selectAllChildren(target);
+        this.strategy = new HtmlContentStrategy(target);
       }
+
+      this.strategy.initialSelection();
 
       // Get the region of the selection
       var targetArea = target.getBoundingClientRect();
@@ -90,7 +84,7 @@
         left: targetArea.left + window.pageXOffset
       };
 
-      var rightKnobPos = this.rangeHelper.outerRect();
+      var rightKnobPos = this.strategy.endPosition();
 
       this.createKnob('left', leftKnobPos);
       this.createKnob('right', rightKnobPos);
@@ -106,7 +100,7 @@
       }
       this.optionsEl.innerHTML = actions.join('');
 
-      this.optionsEl.addEventListener(this.START, this)
+      this.optionsEl.addEventListener(this.START, this);
 
       document.body.appendChild(this.optionsEl);
       this.positionMenu();
@@ -117,8 +111,8 @@
       var top = parseInt(this.leftKnob.style.top, 10);
       var left = parseInt(this.leftKnob.style.left, 10);
 
-      this.optionsEl.style.top = top + 'px';
-      this.optionsEl.style.left = left + 'px';
+      this.optionsEl.style.top = (top + this.MENU_ADJUST_TOP) + 'px';
+      this.optionsEl.style.left = (left + this.MENU_ADJUST_LEFT) + 'px';
     },
 
     /**
@@ -134,17 +128,14 @@
       }
 
       var sel = window.getSelection();
-      if (action == 'copy') {
-        this.clipboard = sel.toString();
-      } else if (action == 'cut') {
-        this.clipboard = sel.toString();
-        range = sel.getRangeAt(0);
-        range.deleteContents();
-      } else if (action == 'paste') {
-        range = sel.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(document.createTextNode(this.clipboard));
-      }
+      this.strategy[action]({
+
+        value: this.clipboard,
+
+        modify: function(clipboard) {
+          this.clipboard = clipboard;
+        }.bind(this)
+      });
 
       this.teardown();
     },
@@ -154,11 +145,9 @@
      */
     teardown: function() {
 
-      if (!this.controlsShown) {
-        return;
+      if (this.interactTimeout) {
+        clearTimeout(this.interactTimeout);
       }
-
-      clearTimeout(this.interactTimeout);
 
       if (this.leftKnob) {
         document.body.removeChild(this.leftKnob);
@@ -172,14 +161,17 @@
 
       this.controlsShown = false;
 
-      document.body.removeChild(this.optionsEl);
+      if (this.optionsEl) {
+        document.body.removeChild(this.optionsEl);
+        delete this.optionsEl;
+      }
     },
 
     /**
      * Creates a left or right knob
      */
     createKnob: function(name, pos) {
-      var knob = name + 'Knob'
+      var knob = name + 'Knob';
       if (this[knob]) {
         this[knob].parentNode.removeChild(this[knob]);
       }
@@ -222,25 +214,28 @@
       var lastPosition = {};
       while (true) {
 
-        var thisPosition = this.rangeHelper.bottomRect();
+        var thisPosition = this.strategy.bottomRect();
 
         // Break if we meet the word, or did not move on this iteration
         if (thisPosition.bottom == lastPosition.bottom &&
           thisPosition.right == lastPosition.right) {
           break;
-        } 
-        if ( direction == 'right' &&
+        }
+        if (direction == 'right' &&
           thisPosition.bottom > xy.y &&
           thisPosition.right > xy.x) {
           break;
-        } else if ( direction == 'left' &&
+        } else if (direction == 'left' &&
           thisPosition.bottom < xy.y &&
           thisPosition.right < xy.x) {
           break;
         }
 
-        var selection = window.getSelection();
-        selection.modify('extend', direction, modification);
+       if (direction == 'left') {
+          this.strategy.shrinkRight();
+        } else {
+          this.strategy.extendRight();
+        }
 
         lastPosition = thisPosition;
       }
@@ -253,7 +248,7 @@
     leftKnobHandler: function(xy, el) {
       var direction;
 
-      var thisPosition = this.rangeHelper.topRect();
+      var thisPosition = this.strategy.topRect();
 
       if (xy.y < thisPosition.top ||
           xy.x < thisPosition.left) {
@@ -262,58 +257,33 @@
         direction = 'right';
       }
 
-      var modified = false;
+      var lastPosition = {};
 
       while (true) {
 
-        thisPosition = this.rangeHelper.topRect();
+        thisPosition = this.strategy.topRect();
         // Break if we meet the word, or did not move on this iteration
-        if ( direction == 'right' && (
-          thisPosition.top > xy.y &&
-          thisPosition.left > xy.x) ) {
+        if (thisPosition.top == lastPosition.top &&
+          thisPosition.left == lastPosition.left) {
           break;
-        } else if ( direction == 'left' &&
+        }
+        if (direction == 'right' && (
+          thisPosition.top > xy.y &&
+          thisPosition.left > xy.x)) {
+          break;
+        } else if (direction == 'left' &&
           thisPosition.top < xy.y &&
           thisPosition.left < xy.x) {
           break;
         }
 
-        var range = window.getSelection().getRangeAt(0);
-        var previous;
-        var offset = 0;
-
         if (direction == 'left') {
-            // Detect if selection is backwards
-            var sel = window.getSelection();
-            var range = document.createRange();
-            range.setStart(sel.anchorNode, sel.anchorOffset);
-            range.setEnd(sel.focusNode, sel.focusOffset);
-            var backwards = range.collapsed;
-            range.detach();
-
-            // modify() works on the focus of the selection
-            var endNode = sel.focusNode, endOffset = sel.focusOffset;
-            sel.collapse(sel.anchorNode, sel.anchorOffset);
-
-            var selDirection;
-            if (backwards) {
-                selDirection = 'forward';
-            } else {
-                selDirection = 'backward';
-            }
-
-            sel.modify("move", selDirection, "word");
-            sel.extend(endNode, endOffset);
+          this.strategy.extendLeft();
         } else {
-          var sel = window.getSelection();
-          var range = sel.getRangeAt(0);
-          try {
-            range.setStart(sel.anchorNode, sel.anchorOffset+1);
-          } catch(e) {
-            console.log('Couldn\'t get element')
-            break;
-          }
+          this.strategy.shrinkLeft();
         }
+
+        lastPosition = thisPosition;
       }
     },
 
@@ -343,16 +313,228 @@
     }
   };
 
+  function HtmlInputStrategy(node) {
+    this.node = node;
+  }
+
+  HtmlInputStrategy.prototype = {
+
+    copy: function(clipboard) {
+      var content = this.node.value.substring(
+        this.node.selectionStart,
+        this.node.selectionEnd
+      );
+
+      clipboard.modify(content);
+    },
+
+    cut: function(clipboard) {
+      this.copy(clipboard);
+      this.node.value = this.node.value
+        .substring(0, this.node.selectionStart - 1) +
+        this.node.value.substring(this.node.selectionEnd);
+    },
+
+    paste: function(clipboard) {
+      this.node.value = clipboard.value;
+    },
+
+    /**
+     * Creates the initial selection
+     * This is currently the entire value of the input
+     */
+    initialSelection: function() {
+      this.node.selectionStart = 0;
+      this.node.selectionEnd = this.node.value.length;
+    },
+
+    /**
+     * Gets the region of the selectedText inside of an input
+     */
+    getRegion: function() {
+
+      var input = this.node;
+      var offset = getInputOffset(),
+          topPos = offset.top,
+          leftPos = offset.left,
+          width = getInputCSS('width', true),
+          height = getInputCSS('height', true);
+
+          // Styles to simulate a node in an input field
+      var cssDefaultStyles = 'white-space:pre;padding:0;margin:0;',
+          listOfModifiers = ['direction', 'font-family', 'font-size',
+          'font-size-adjust', 'font-variant', 'font-weight', 'font-style',
+          'letter-spacing', 'line-height', 'text-align', 'text-indent',
+          'text-transform', 'word-wrap', 'word-spacing'];
+
+      topPos += getInputCSS('padding-top', true);
+      topPos += getInputCSS('border-top-width', true);
+      leftPos += getInputCSS('padding-left', true);
+      leftPos += getInputCSS('border-left-width', true);
+      leftPos += 1; //Seems to be necessary
+
+      for (var i = 0; i < listOfModifiers.length; i++) {
+          var property = listOfModifiers[i];
+          cssDefaultStyles += property + ':' + getInputCSS(property) + ';';
+      }
+      // End of CSS variable checks
+
+      var text = this.node.value,
+          textLen = text.length,
+          fakeClone = document.createElement('div');
+
+      if (this.node.selectionStart > 0)
+        appendPart(0, this.node.selectionStart);
+
+      var fakeRange = appendPart(
+        this.node.selectionStart,
+        this.node.selectionEnd
+      );
+
+      if (textLen > this.node.selectionEnd)
+        appendPart(this.node.selectionEnd, textLen);
+
+      // Styles to inherit the font styles of the element
+      fakeClone.style.cssText = cssDefaultStyles;
+
+      // Styles to position the text node at the desired position
+      fakeClone.style.position = 'absolute';
+      fakeClone.style.top = topPos + 'px';
+      fakeClone.style.left = leftPos + 'px';
+      fakeClone.style.width = width + 'px';
+      fakeClone.style.height = height + 'px';
+      fakeClone.style.backgroundColor = '#FF0000';
+      document.body.appendChild(fakeClone);
+      var returnValue = fakeRange.getBoundingClientRect();
+
+      fakeClone.parentNode.removeChild(fakeClone); // Comment this to debug
+
+      function appendPart(start, end) {
+        var span = document.createElement('span');
+        //Force styles to prevent unexpected results
+        span.style.cssText = cssDefaultStyles;
+        span.textContent = text.substring(start, end);
+        fakeClone.appendChild(span);
+        return span;
+      }
+
+      // Computing offset position
+      function getInputOffset() {
+        var body = document.body,
+            win = document.defaultView,
+            docElem = document.documentElement,
+            box = document.createElement('div');
+        box.style.paddingLeft = box.style.width = '1px';
+        body.appendChild(box);
+        var isBoxModel = box.offsetWidth == 2;
+        body.removeChild(box);
+        box = input.getBoundingClientRect();
+        var clientTop = docElem.clientTop || body.clientTop || 0,
+
+            clientLeft = docElem.clientLeft || body.clientLeft || 0,
+
+            scrollTop = win.pageYOffset || isBoxModel &&
+              docElem.scrollTop || body.scrollTop,
+
+            scrollLeft = win.pageXOffset || isBoxModel &&
+              docElem.scrollLeft || body.scrollLeft;
+        return {
+            top: box.top + scrollTop - clientTop,
+            left: box.left + scrollLeft - clientLeft};
+      }
+
+      function getInputCSS(prop, isnumber) {
+        var val = document.defaultView
+          .getComputedStyle(input, null).getPropertyValue(prop);
+
+        return isnumber ? parseFloat(val) : val;
+      }
+
+      return returnValue;
+    },
+
+     /**
+     * Gets the outer rectangle coordinates of the selction
+     * Normalizes data to absolute values with window offsets.
+     * Inspired by: stackoverflow.com/questions/6930578
+     */
+    endPosition: function() {
+      var region = this.getRegion();
+      return {
+        top: region.bottom + window.pageYOffset,
+        left: region.right + window.pageYOffset
+      };
+    },
+
+    /**
+     * Inputs just have one square generally, so return it
+     * This could be better for textareas
+     */
+    bottomRect: function() {
+      return this.getRegion();
+    },
+
+    /**
+     * Inputs just have one square generally, so return it
+     * This could be better for textareas
+     */
+    topRect: function() {
+      return this.getRegion();
+    },
+
+    shrinkRight: function() {
+        this.node.selectionEnd--;
+    },
+
+    extendRight: function() {
+      this.node.selectionEnd++;
+    },
+
+    shrinkLeft: function() {
+      this.node.selectionStart++;
+    },
+
+    extendLeft: function() {
+      this.node.selectionStart--;
+    }
+  };
+
+
   /**
    * General range helper functions
    */
-  function RangeHelper() {
+  function HtmlContentStrategy(node) {
+    this.node = node;
   }
 
-  RangeHelper.prototype = {
+  HtmlContentStrategy.prototype = {
 
     get sel() {
       return window.getSelection();
+    },
+
+    copy: function(modifyClipboard) {
+      modifyClipboard(sel.toString());
+    },
+
+    cut: function(modifyClipboard) {
+      modifyClipboard(sel.toString());
+      range = sel.getRangeAt(0);
+      range.deleteContents();
+    },
+
+    paste: function() {
+      range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createTextNode(this.clipboard));
+    },
+
+    /**
+     * Creates the initial selection
+     * This is currently the entire elemtn
+     */
+    initialSelection: function() {
+      window.getSelection().selectAllChildren(this.node);
     },
 
     /**
@@ -411,10 +593,10 @@
      * Gets the outer rectangle coordinates of the selction
      * Normalizes data to absolute values with window offsets.
      */
-    outerRect: function() {
+    endPosition: function() {
       var range = this.sel.getRangeAt(0).cloneRange();
       range.collapse(false);
-      var dummy = document.createElement("span");
+      var dummy = document.createElement('span');
       range.insertNode(dummy);
 
       var rect = dummy.getBoundingClientRect();
@@ -425,7 +607,48 @@
       dummy.parentNode.removeChild(dummy);
 
       return coords;
+    },
+
+    shrinkRight: function() {
+      this.sel.modify('extend', 'left', 'word');
+    },
+
+    extendRight: function() {
+      this.sel.modify('extend', 'right', 'word');
+    },
+
+    shrinkLeft: function() {
+      var sel = window.getSelection();
+      var range = sel.getRangeAt(0);
+
+      range.setStart(sel.anchorNode, sel.anchorOffset + 1);
+    },
+
+    extendLeft: function() {
+      // Detect if selection is backwards
+      var sel = window.getSelection();
+      var range = document.createRange();
+      range.setStart(sel.anchorNode, sel.anchorOffset);
+      range.setEnd(sel.focusNode, sel.focusOffset);
+      var backwards = range.collapsed;
+      range.detach();
+
+      // modify() works on the focus of the selection
+      var endNode = sel.focusNode;
+      var endOffset = sel.focusOffset;
+      sel.collapse(sel.anchorNode, sel.anchorOffset);
+
+      var selDirection;
+      if (backwards) {
+          selDirection = 'forward';
+      } else {
+          selDirection = 'backward';
+      }
+
+      sel.modify('move', selDirection, 'word');
+      sel.extend(endNode, endOffset);
     }
+
   };
 
   function MouseCopyPaste() {
@@ -444,7 +667,7 @@
     coords: function(e) {
       return {
         x: e.pageX,
-        y: e.pageY,
+        y: e.pageY
       };
     }
   };
@@ -463,7 +686,7 @@
      * Extracts the X/Y positions for a touch event
      */
     coords: function(e) {
-      var touch = e.originalEvent.touches[0];
+      var touch = e.touches[0];
 
       return {
         x: touch.pageX,
@@ -472,7 +695,7 @@
     }
   };
 
-  if ("ontouchstart" in window) {
+  if ('ontouchstart' in window) {
     var copyPaste = new TouchCopyPaste();
   } else {
     var copyPaste = new MouseCopyPaste();

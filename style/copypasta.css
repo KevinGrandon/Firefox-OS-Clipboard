@@ -13,6 +13,8 @@
 #clipboard-menu {
   position: absolute;
   list-style-type: none;
+  padding: 0;
+  margin: 0;
 }
 
 #clipboard-menu li {
