@@ -513,20 +513,20 @@
       return window.getSelection();
     },
 
-    copy: function(modifyClipboard) {
-      modifyClipboard(sel.toString());
+    copy: function(clipboard) {
+      clipboard.modify(sel.toString());
     },
 
-    cut: function(modifyClipboard) {
-      modifyClipboard(sel.toString());
-      range = sel.getRangeAt(0);
+    cut: function(clipboard) {
+      clipboard.modify(sel.toString());
+      range = this.sel.getRangeAt(0);
       range.deleteContents();
     },
 
-    paste: function() {
-      range = sel.getRangeAt(0);
+    paste: function(clipboard) {
+      range = this.sel.getRangeAt(0);
       range.deleteContents();
-      range.insertNode(document.createTextNode(this.clipboard));
+      range.insertNode(document.createTextNode(clipboard.value));
     },
 
     /**
