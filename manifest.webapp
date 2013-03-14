@@ -1,0 +1,19 @@
+{
+  "name": "Clipboard",
+  "description": "I like to copy & paste in FirefoxOS.",
+  "launch_path": "/index.html",
+  "developer": {
+    "name": "Clipboard",
+    "url": "https://github.com/mozilla-b2g/gaia"
+  },
+  "locales": {
+    "en-US": {
+      "name": "Clipboard",
+      "description": "I like to copy & paste in FirefoxOS."
+    }
+  },
+  "default_locale": "en-US",
+  "icons": {
+    "128": "/style/icons/Blank.png"
+  }
+}
