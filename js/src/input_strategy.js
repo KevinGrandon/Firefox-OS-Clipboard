@@ -36,7 +36,9 @@ HtmlInputStrategy.prototype = {
   /**
    * Gets the region of the selectedText inside of an input
    */
-  getRegion: function() {
+  getRegion: function(method) {
+
+    method = method || 'getBoundingClientRect';
 
     var input = this.node;
     var offset = getInputOffset(),
@@ -90,7 +92,7 @@ HtmlInputStrategy.prototype = {
     fakeClone.style.height = height + 'px';
     fakeClone.style.backgroundColor = '#FF0000';
     document.body.appendChild(fakeClone);
-    var returnValue = fakeRange.getBoundingClientRect();
+    var returnValue = fakeRange[method]();
 
     fakeClone.parentNode.removeChild(fakeClone); // Comment this to debug
 
@@ -123,6 +125,7 @@ HtmlInputStrategy.prototype = {
 
           scrollLeft = win.pageXOffset || isBoxModel &&
             docElem.scrollLeft || body.scrollLeft;
+
       return {
           top: box.top + scrollTop - clientTop,
           left: box.left + scrollLeft - clientLeft};
@@ -156,7 +159,25 @@ HtmlInputStrategy.prototype = {
    * This could be better for textareas
    */
   bottomRect: function() {
-    return this.getRegion();
+    var rects = this.getRegion('getClientRects');
+
+    var bottom;
+    for (var i = 0, rect; rect = rects[i]; i++) {
+      if (!bottom || rect.bottom > bottom.bottom) {
+        bottom = rect;
+      }
+    }
+
+    if (!bottom) {
+      return {};
+    }
+
+    var rangePosition = {
+      bottom: bottom.bottom + window.pageYOffset,
+      right: bottom.right + window.pageXOffset
+    };
+
+    return rangePosition;
   },
 
   /**
@@ -164,7 +185,25 @@ HtmlInputStrategy.prototype = {
    * This could be better for textareas
    */
   topRect: function() {
-    return this.getRegion();
+    var rects = this.getRegion('getClientRects');
+
+    var topmost;
+    for (var i = 0, rect; rect = rects[i]; i++) {
+      if (!topmost || rect.top < topmost.top) {
+        topmost = rect;
+      }
+    }
+
+    if (!topmost) {
+      return {};
+    }
+
+    var rangePosition = {
+      top: topmost.top + window.pageYOffset,
+      left: topmost.left + window.pageXOffset
+    };
+
+    return rangePosition;
   },
 
   shrinkRight: function() {

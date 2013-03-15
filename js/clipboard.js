@@ -390,7 +390,9 @@ HtmlInputStrategy.prototype = {
   /**
    * Gets the region of the selectedText inside of an input
    */
-  getRegion: function() {
+  getRegion: function(method) {
+
+    method = method || 'getBoundingClientRect';
 
     var input = this.node;
     var offset = getInputOffset(),
@@ -444,7 +446,7 @@ HtmlInputStrategy.prototype = {
     fakeClone.style.height = height + 'px';
     fakeClone.style.backgroundColor = '#FF0000';
     document.body.appendChild(fakeClone);
-    var returnValue = fakeRange.getBoundingClientRect();
+    var returnValue = fakeRange[method]();
 
     fakeClone.parentNode.removeChild(fakeClone); // Comment this to debug
 
@@ -477,6 +479,7 @@ HtmlInputStrategy.prototype = {
 
           scrollLeft = win.pageXOffset || isBoxModel &&
             docElem.scrollLeft || body.scrollLeft;
+
       return {
           top: box.top + scrollTop - clientTop,
           left: box.left + scrollLeft - clientLeft};
@@ -518,6 +521,10 @@ HtmlInputStrategy.prototype = {
    * This could be better for textareas
    */
   topRect: function() {
+
+    var testRects = this.getRegion('getClientRects');
+    console.log('TEST RECTS:', testRects)
+
     return this.getRegion();
   },
 
