@@ -12,11 +12,11 @@ HtmlContentStrategy.prototype = {
   },
 
   copy: function(clipboard) {
-    clipboard.modify(sel.toString());
+    clipboard.modify(this.sel.toString());
   },
 
   cut: function(clipboard) {
-    clipboard.modify(sel.toString());
+    clipboard.modify(this.sel.toString());
     range = this.sel.getRangeAt(0);
     range.deleteContents();
   },
