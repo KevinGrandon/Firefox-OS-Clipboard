@@ -504,16 +504,8 @@ HtmlInputStrategy.prototype = {
     };
   },
 
-  shrinkRight: function() {
-      this.node.selectionEnd--;
-  },
-
   extendRight: function() {
     this.node.selectionEnd++;
-  },
-
-  shrinkLeft: function() {
-    this.node.selectionStart++;
   },
 
   extendLeft: function() {
@@ -566,6 +558,7 @@ HtmlContentStrategy.prototype = {
    * @param {Object} right selection control.
    */
   rebuildSelection: function(left, right) {
+
     var start = document.caretPositionFromPoint(left.cursorX, left.cursorY);
     var end = document.caretPositionFromPoint(right.cursorX, right.cursorY);
     //console.log('Debug viewport offsets:', start.offsetNode, start.offset, end.offsetNode, end.offset)
@@ -575,6 +568,13 @@ HtmlContentStrategy.prototype = {
     newRange.setStart(start.offsetNode, start.offset);
     newRange.setEnd(end.offsetNode, end.offset);
     this.sel.addRange(newRange);
+
+    // Extend the range a bit so there isn't a big gap
+    // This feels the best in practice, we may be able to adjust the CSS so this isnt' needed.
+    this.extendLeft('character');
+    this.extendLeft('character');
+    this.extendRight('character');
+    this.extendRight('character');
   },
 
   /**
@@ -613,20 +613,6 @@ HtmlContentStrategy.prototype = {
   },
 
   /**
-   * Shrinks the right selection bound
-   */
-  shrinkRight: function(magnitude) {
-    magnitude = magnitude || 'character';
-
-    var curSelected = this.sel + '';
-    this.sel.modify('extend', 'left', magnitude);
-
-    if (this.sel + '' == curSelected && magnitude == 'character') {
-      this.shrinkRight('word');
-    }
-  },
-
-  /**
    * Extends the right selection bound
    */
   extendRight: function(magnitude) {
@@ -637,28 +623,6 @@ HtmlContentStrategy.prototype = {
 
     if (this.sel + '' == curSelected && magnitude == 'character') {
       this.extendRight('word');
-    }
-  },
-
-  /**
-   * Shrinks the left selection bound
-   */
-  shrinkLeft: function(magnitude) {
-    magnitude = magnitude || 'character';
-
-    var sel = this.sel;
-
-    // modify() works on the focus of the selection
-    var endNode = sel.focusNode;
-    var endOffset = sel.focusOffset;
-    sel.collapse(sel.anchorNode, sel.anchorOffset);
-
-    var curSelected = this.sel + '';
-    sel.modify('move', 'forward', magnitude);
-    sel.extend(endNode, endOffset);
-
-    if (this.sel + '' == curSelected && magnitude == 'character') {
-      this.shrinkLeft('word');
     }
   },
 

@@ -198,16 +198,8 @@ HtmlInputStrategy.prototype = {
     };
   },
 
-  shrinkRight: function() {
-      this.node.selectionEnd--;
-  },
-
   extendRight: function() {
     this.node.selectionEnd++;
-  },
-
-  shrinkLeft: function() {
-    this.node.selectionStart++;
   },
 
   extendLeft: function() {
