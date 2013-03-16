@@ -5,7 +5,7 @@ function Clipboard() {
   this.clipboard = '';
 
   this.MENU_ADJUST_TOP = -30;
-  this.MENU_ADJUST_LEFT = 20;
+  this.MENU_ADJUST_LEFT = 35;
   this.KNOB_SIZE = 30;
 
   this.INTERACT_DELAY = 700;
