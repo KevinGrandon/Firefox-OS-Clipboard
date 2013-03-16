@@ -9,18 +9,17 @@ var RANGE_ADJUST_X = 30;
 
 var KNOB_SIZE = 50;
 
-
 var MENU_ADJUST_TOP = - 55;
 var MENU_ADJUST_LEFT = 15;
+
+var INTERACT_DELAY = 700;
+var INIT_MOVE_LIMIT = 50;
 
 /**
  * Copy/Paste base class
  */
 function Clipboard() {
   this.clipboard = '';
-  
-  this.INTERACT_DELAY = 700;
-  this.TOUCH_BOUND = 50;
 
   this.controlsShown = false;
 
@@ -45,7 +44,7 @@ Clipboard.prototype = {
 
     this.interactTimeout = setTimeout(
       this.showControls.bind(this),
-      this.INTERACT_DELAY
+      INTERACT_DELAY
     );
   },
 
@@ -58,8 +57,8 @@ Clipboard.prototype = {
     var xy = this.coords(e);
 
     if (!this.controlsShown && (
-        Math.abs(this.startXY.x - xy.x) > this.TOUCH_BOUND ||
-        Math.abs(this.startXY.y - xy.y) > this.TOUCH_BOUND)) {
+        Math.abs(this.startXY.x - xy.x) > INIT_MOVE_LIMIT ||
+        Math.abs(this.startXY.y - xy.y) > INIT_MOVE_LIMIT)) {
       this.teardown();
     }
 
