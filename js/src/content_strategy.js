@@ -158,38 +158,34 @@ HtmlContentStrategy.prototype = {
    * Shrinks the left selection bound
    */
   shrinkLeft: function() {
+    /*
     var sel = window.getSelection();
     var range = sel.getRangeAt(0);
 
     range.setStart(sel.anchorNode, sel.anchorOffset + 1);
+    */
   },
 
   /**
    * Extends the left selection bound
    */
-  extendLeft: function() {
-    // Detect if selection is backwards
-    var sel = window.getSelection();
-    var range = document.createRange();
-    range.setStart(sel.anchorNode, sel.anchorOffset);
-    range.setEnd(sel.focusNode, sel.focusOffset);
-    var backwards = range.collapsed;
-    range.detach();
+  extendLeft: function(magnitude) {
+    magnitude = magnitude || 'character';
+
+    var sel = this.sel;
 
     // modify() works on the focus of the selection
     var endNode = sel.focusNode;
     var endOffset = sel.focusOffset;
     sel.collapse(sel.anchorNode, sel.anchorOffset);
 
-    var selDirection;
-    if (backwards) {
-        selDirection = 'forward';
-    } else {
-        selDirection = 'backward';
-    }
-
-    sel.modify('move', selDirection, 'word');
+    var curSelected = this.sel + '';
+    sel.modify('move', 'backward', magnitude);
     sel.extend(endNode, endOffset);
+
+    if (this.sel + '' == curSelected && magnitude == 'character') {
+      this.extendRight('word');
+    }
   }
 
 };
