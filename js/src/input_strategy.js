@@ -16,12 +16,15 @@ HtmlInputStrategy.prototype = {
   cut: function(clipboard) {
     this.copy(clipboard);
     this.node.value = this.node.value
-      .substring(0, this.node.selectionStart - 1) +
+      .substring(0, this.node.selectionStart) +
       this.node.value.substring(this.node.selectionEnd);
   },
 
   paste: function(clipboard) {
-    this.node.value = clipboard.value;
+    this.node.value = this.node.value
+      .substring(0, this.node.selectionStart) +
+      clipboard.value +
+      this.node.value.substring(this.node.selectionEnd)
   },
 
   /**

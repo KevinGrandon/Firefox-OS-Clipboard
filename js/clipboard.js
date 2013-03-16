@@ -84,11 +84,15 @@ Clipboard.prototype = {
     // Get the region of the selection
     var targetArea = this.strategy.getRegion();
     var leftKnobPos = {
-      top: targetArea.top - 15,
-      left: targetArea.left - 20
+      top: targetArea.top - 20,
+      left: targetArea.left - 35
     };
 
-    var rightKnobPos = this.strategy.endPosition();
+    var rightTargetArea = this.strategy.endPosition();
+    var rightKnobPos = {
+      top: rightTargetArea.top,
+      left: rightTargetArea.left - 15
+    };
 
     this.createKnob('left', leftKnobPos);
     this.createKnob('right', rightKnobPos);
@@ -342,12 +346,15 @@ HtmlInputStrategy.prototype = {
   cut: function(clipboard) {
     this.copy(clipboard);
     this.node.value = this.node.value
-      .substring(0, this.node.selectionStart - 1) +
+      .substring(0, this.node.selectionStart) +
       this.node.value.substring(this.node.selectionEnd);
   },
 
   paste: function(clipboard) {
-    this.node.value = clipboard.value;
+    this.node.value = this.node.value
+      .substring(0, this.node.selectionStart) +
+      clipboard.value +
+      this.node.value.substring(this.node.selectionEnd)
   },
 
   /**
@@ -615,8 +622,6 @@ HtmlContentStrategy.prototype = {
 
     this.extendLeft('word')
     this.extendRight('word')
-    return
-    window.getSelection().selectAllChildren(this.node);
   },
 
   /**
