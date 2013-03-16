@@ -39,6 +39,11 @@ Clipboard.prototype = {
   },
 
   onMove: function(e) {
+
+    if (!this.startXY) {
+      return;
+    }
+
     var xy = this.coords(e);
 
     if (!this.controlsShown && (
@@ -56,6 +61,7 @@ Clipboard.prototype = {
       return;
     }
 
+    delete this.startXY;
     this.teardown();
   },
 
