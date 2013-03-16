@@ -215,21 +215,21 @@ Clipboard.prototype = {
       var thisPosition = this.strategy.bottomRect();
 
       // Break if we meet the word, or did not move on this iteration
+      var buffer = 10;
       if (thisPosition.bottom == lastPosition.bottom &&
         thisPosition.right == lastPosition.right) {
         break;
-      }
-      if (direction == 'right' &&
-        thisPosition.bottom > xy.y &&
-        thisPosition.right > xy.x) {
+      } else if (direction == 'right' &&
+        thisPosition.bottom + buffer > xy.y &&
+        thisPosition.right + buffer > xy.x) {
         break;
       } else if (direction == 'left' &&
-        thisPosition.bottom < xy.y &&
-        thisPosition.right < xy.x) {
+        thisPosition.bottom - buffer < xy.y &&
+        thisPosition.right - buffer < xy.x) {
         break;
       }
 
-     if (direction == 'left') {
+      if (direction == 'left') {
         this.strategy.shrinkRight();
       } else {
         this.strategy.extendRight();
@@ -265,13 +265,15 @@ Clipboard.prototype = {
         thisPosition.left == lastPosition.left) {
         break;
       }
+
+      var buffer = 10;
       if (direction == 'right' && (
-        thisPosition.top > xy.y &&
-        thisPosition.left > xy.x)) {
+        thisPosition.top + buffer > xy.y &&
+        thisPosition.left + buffer > xy.x)) {
         break;
       } else if (direction == 'left' &&
-        thisPosition.top < xy.y &&
-        thisPosition.left < xy.x) {
+        thisPosition.top - buffer < xy.y &&
+        thisPosition.left - buffer < xy.x) {
         break;
       }
 
