@@ -2,6 +2,7 @@
  * General range helper functions
  */
 function HtmlContentStrategy(node) {
+  this.canPaste = false;
   this.node = node;
 }
 

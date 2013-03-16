@@ -116,7 +116,8 @@ Clipboard.prototype = {
       '<li data-action="cut">Cut</li>',
       '<li data-action="copy">Copy</li>'
     ];
-    if (this.clipboard) {
+
+    if (this.clipboard && this.strategy.canPaste) {
       actions.push('<li data-action="paste">Paste</li>');
     }
     this.optionsEl.innerHTML = actions.join('');
@@ -305,6 +306,7 @@ SelectionControl.prototype = {
     return this.config.y - window.pageYOffset + this.config.offsetY;
   }
 };function HtmlInputStrategy(node) {
+  this.canPaste = true;
   this.node = node;
 }
 
@@ -515,6 +517,7 @@ HtmlInputStrategy.prototype = {
  * General range helper functions
  */
 function HtmlContentStrategy(node) {
+  this.canPaste = false;
   this.node = node;
 }
 

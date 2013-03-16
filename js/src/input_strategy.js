@@ -1,4 +1,5 @@
 function HtmlInputStrategy(node) {
+  this.canPaste = true;
   this.node = node;
 }
 
