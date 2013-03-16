@@ -66,6 +66,18 @@ HtmlInputStrategy.prototype = {
   },
 
   /**
+   * Rebuilds selection from knob placement
+   */
+  rebuildSelection: function() {
+
+    var leftBound = 0;
+    var rightBound = this.node.value.length;
+
+    this.node.selectionStart = leftBound;
+    this.node.selectionEnd = rightBound;
+  },
+
+  /**
    * Gets the region of the selectedText inside of an input
    */
   getRegion: function(method) {
@@ -184,58 +196,6 @@ HtmlInputStrategy.prototype = {
       top: region.bottom + window.pageYOffset,
       left: region.right + window.pageYOffset
     };
-  },
-
-  /**
-   * Inputs just have one square generally, so return it
-   * This could be better for textareas
-   */
-  bottomRect: function() {
-    var rects = this.getRegion('getClientRects');
-
-    var bottom;
-    for (var i = 0, rect; rect = rects[i]; i++) {
-      if (!bottom || rect.bottom > bottom.bottom) {
-        bottom = rect;
-      }
-    }
-
-    if (!bottom) {
-      return {};
-    }
-
-    var rangePosition = {
-      bottom: bottom.bottom + window.pageYOffset,
-      right: bottom.right + window.pageXOffset
-    };
-
-    return rangePosition;
-  },
-
-  /**
-   * Inputs just have one square generally, so return it
-   * This could be better for textareas
-   */
-  topRect: function() {
-    var rects = this.getRegion('getClientRects');
-
-    var topmost;
-    for (var i = 0, rect; rect = rects[i]; i++) {
-      if (!topmost || rect.top < topmost.top) {
-        topmost = rect;
-      }
-    }
-
-    if (!topmost) {
-      return {};
-    }
-
-    var rangePosition = {
-      top: topmost.top + window.pageYOffset,
-      left: topmost.left + window.pageXOffset
-    };
-
-    return rangePosition;
   },
 
   shrinkRight: function() {
