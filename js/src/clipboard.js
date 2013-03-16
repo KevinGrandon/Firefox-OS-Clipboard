@@ -6,6 +6,7 @@ function Clipboard() {
 
   this.MENU_ADJUST_TOP = -45;
   this.MENU_ADJUST_LEFT = 20;
+  this.KNOB_SIZE = 30;
 
   this.INTERACT_DELAY = 700;
   this.TOUCH_BOUND = 50;
@@ -23,8 +24,6 @@ Clipboard.prototype = {
   },
 
   onStart: function(e) {
-    dump('GOT TOUCH START' + e);
-
     if (this.controlsShown) {
       this.teardown();
       return;
@@ -176,6 +175,7 @@ Clipboard.prototype = {
 
     this[knob] = document.createElement('div');
     this[knob].className = 'knob ' + name;
+    this[knob].innerHTML = '<span></span>';
     document.body.appendChild(this[knob]);
 
     this[knob].style.left = pos.left + 'px';
@@ -201,23 +201,24 @@ Clipboard.prototype = {
    * when the right knob is moved.
    */
   rightKnobHandler: function(xy, el) {
-    var modification = 'word';
     var direction;
 
-    if (xy.x > parseInt(el.style.left, 10) ||
-        xy.y > parseInt(el.style.top, 10)) {
+    var thisPosition = this.strategy.bottomRect();
+
+    if (xy.y > thisPosition.bottom ||
+        xy.x > thisPosition.right) {
       direction = 'right';
     } else {
       direction = 'left';
     }
 
     var lastPosition = {};
+    var buffer = 10;
     while (true) {
 
-      var thisPosition = this.strategy.bottomRect();
+      thisPosition = this.strategy.bottomRect();
 
       // Break if we meet the word, or did not move on this iteration
-      var buffer = 10;
       if (thisPosition.bottom == lastPosition.bottom &&
         thisPosition.right == lastPosition.right) {
         break;
@@ -258,7 +259,7 @@ Clipboard.prototype = {
     }
 
     var lastPosition = {};
-
+    var buffer = 10;
     while (true) {
 
       thisPosition = this.strategy.topRect();
@@ -266,10 +267,7 @@ Clipboard.prototype = {
       if (thisPosition.top == lastPosition.top &&
         thisPosition.left == lastPosition.left) {
         break;
-      }
-
-      var buffer = 10;
-      if (direction == 'right' && (
+      } else if (direction == 'right' && (
         thisPosition.top + buffer > xy.y &&
         thisPosition.left + buffer > xy.x)) {
         break;
@@ -307,8 +305,9 @@ Clipboard.prototype = {
         self.leftKnobHandler(xy, el);
       }
 
-      el.style.left = xy.x + 'px';
-      el.style.top = xy.y + 'px';
+
+      el.style.left = (xy.x - self.KNOB_SIZE/2) + 'px';
+      el.style.top = (xy.y - self.KNOB_SIZE/2) + 'px';
 
       self.positionMenu();
     }
