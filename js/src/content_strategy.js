@@ -37,8 +37,6 @@ HtmlContentStrategy.prototype = {
 
     this.extendLeft('word')
     this.extendRight('word')
-    return
-    window.getSelection().selectAllChildren(this.node);
   },
 
   /**

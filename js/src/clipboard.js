@@ -83,11 +83,15 @@ Clipboard.prototype = {
     // Get the region of the selection
     var targetArea = this.strategy.getRegion();
     var leftKnobPos = {
-      top: targetArea.top - 15,
-      left: targetArea.left - 20
+      top: targetArea.top - 20,
+      left: targetArea.left - 35
     };
 
-    var rightKnobPos = this.strategy.endPosition();
+    var rightTargetArea = this.strategy.endPosition();
+    var rightKnobPos = {
+      top: rightTargetArea.top,
+      left: rightTargetArea.left - 15
+    };
 
     this.createKnob('left', leftKnobPos);
     this.createKnob('right', rightKnobPos);
