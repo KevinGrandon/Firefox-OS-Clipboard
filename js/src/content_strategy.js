@@ -22,7 +22,7 @@ HtmlContentStrategy.prototype = {
   },
 
   paste: function(clipboard) {
-    range = this.sel.getRangeAt(0);
+    var range = this.sel.getRangeAt(0);
     range.deleteContents();
     range.insertNode(document.createTextNode(clipboard.value));
   },
@@ -32,7 +32,28 @@ HtmlContentStrategy.prototype = {
    * This is currently the entire elemtn
    */
   initialSelection: function() {
+
+    var directions = ['left', 'right'];
+
+    this.extendLeft('word')
+    this.extendRight('word')
+    return
     window.getSelection().selectAllChildren(this.node);
+  },
+
+  /**
+   * Normalized wrapper for getBoundingClientRect()
+   */
+  getRegion: function() {
+    var range = this.sel.getRangeAt(0);
+    var region =  range.getBoundingClientRect();
+
+    return {
+      top: region.top + window.pageYOffset,
+      left: region.left + window.pageXOffset,
+      bottom: region.bottom + window.pageYOffset,
+      right: region.right + window.pageXOffset
+    }
   },
 
   /**

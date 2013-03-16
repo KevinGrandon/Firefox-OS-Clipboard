@@ -26,11 +26,40 @@ HtmlInputStrategy.prototype = {
 
   /**
    * Creates the initial selection
-   * This is currently the entire value of the input
+   * It should be whatever word you were focused on
    */
   initialSelection: function() {
-    this.node.selectionStart = 0;
-    this.node.selectionEnd = this.node.value.length;
+
+    var value = this.node.value;
+
+    var leftBound = this.node.selectionStart;
+    var rightBound = this.node.selectionEnd;
+    var start = this.node.selectionStart;
+
+    for (var i = leftBound-1, letter; letter = value[i]; i--) {
+      if (/[\s]+/.test(letter)) {
+        break;
+      } else {
+        leftBound--;
+        if (!leftBound) {
+          break;
+        }
+      }
+    }
+
+    for (var i = rightBound, letter; letter = value[i]; i++) {
+      if (/[\s]+/.test(letter)) {
+        break;
+      } else {
+        rightBound++;
+        if (!rightBound) {
+          break;
+        }
+      }
+    }
+
+    this.node.selectionStart = leftBound;
+    this.node.selectionEnd = rightBound;
   },
 
   /**

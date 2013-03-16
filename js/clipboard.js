@@ -82,10 +82,10 @@ Clipboard.prototype = {
     this.strategy.initialSelection();
 
     // Get the region of the selection
-    var targetArea = target.getBoundingClientRect();
+    var targetArea = this.strategy.getRegion();
     var leftKnobPos = {
-      top: targetArea.top + window.pageYOffset - 15,
-      left: targetArea.left + window.pageXOffset - 20
+      top: targetArea.top - 15,
+      left: targetArea.left - 20
     };
 
     var rightKnobPos = this.strategy.endPosition();
@@ -352,11 +352,40 @@ HtmlInputStrategy.prototype = {
 
   /**
    * Creates the initial selection
-   * This is currently the entire value of the input
+   * It should be whatever word you were focused on
    */
   initialSelection: function() {
-    this.node.selectionStart = 0;
-    this.node.selectionEnd = this.node.value.length;
+
+    var value = this.node.value;
+
+    var leftBound = this.node.selectionStart;
+    var rightBound = this.node.selectionEnd;
+    var start = this.node.selectionStart;
+
+    for (var i = leftBound-1, letter; letter = value[i]; i--) {
+      if (/[\s]+/.test(letter)) {
+        break;
+      } else {
+        leftBound--;
+        if (!leftBound) {
+          break;
+        }
+      }
+    }
+
+    for (var i = rightBound, letter; letter = value[i]; i++) {
+      if (/[\s]+/.test(letter)) {
+        break;
+      } else {
+        rightBound++;
+        if (!rightBound) {
+          break;
+        }
+      }
+    }
+
+    this.node.selectionStart = leftBound;
+    this.node.selectionEnd = rightBound;
   },
 
   /**
@@ -571,7 +600,7 @@ HtmlContentStrategy.prototype = {
   },
 
   paste: function(clipboard) {
-    range = this.sel.getRangeAt(0);
+    var range = this.sel.getRangeAt(0);
     range.deleteContents();
     range.insertNode(document.createTextNode(clipboard.value));
   },
@@ -581,7 +610,28 @@ HtmlContentStrategy.prototype = {
    * This is currently the entire elemtn
    */
   initialSelection: function() {
+
+    var directions = ['left', 'right'];
+
+    this.extendLeft('word')
+    this.extendRight('word')
+    return
     window.getSelection().selectAllChildren(this.node);
+  },
+
+  /**
+   * Normalized wrapper for getBoundingClientRect()
+   */
+  getRegion: function() {
+    var range = this.sel.getRangeAt(0);
+    var region =  range.getBoundingClientRect();
+
+    return {
+      top: region.top + window.pageYOffset,
+      left: region.left + window.pageXOffset,
+      bottom: region.bottom + window.pageYOffset,
+      right: region.right + window.pageXOffset
+    }
   },
 
   /**
