@@ -20,11 +20,6 @@
 .knob.moving span {
   box-shadow: inset 0 0 2px rgb(0,0,0,0.5), 0 0 3px rgb(0,0,0,0.4);
 }
-/*
-.knob.left {
-  margin-top: -18px;
-}
-*/
 
 #clipboard-menu {
   position: absolute;
@@ -34,6 +29,10 @@
   z-index: 10000;
   border: 0.1rem solid  #222;
   border-radius: 0.2rem 0.2rem 0.2rem 0.2rem;
+}
+
+#clipboard-menu.moving {
+  opacity: 0.2;
 }
 
 #clipboard-menu li {
