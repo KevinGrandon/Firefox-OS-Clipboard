@@ -108,25 +108,6 @@ HtmlContentStrategy.prototype = {
   },
 
   /**
-   * Gets the region of a range
-   * Returns an object with top, right, bottom, and left attributes
-   */
-   /*
-  region: function() {
-    var range = this.sel.getRangeAt(0).cloneRange();
-    var rect = range.getBoundingClientRect();
-    var coords = {
-      top: rect.top + window.pageYOffset,
-      bottom: rect.bottom + window.pageYOffset,
-      left: rect.left + window.pageXOffset,
-      right: rect.right + window.pageXOffset
-    };
-    console.log('REGION IS:', coords)
-    return coords
-  },
-  */
-
-  /**
    * Shrinks the right selection bound
    */
   shrinkRight: function(magnitude) {
@@ -157,13 +138,23 @@ HtmlContentStrategy.prototype = {
   /**
    * Shrinks the left selection bound
    */
-  shrinkLeft: function() {
-    /*
-    var sel = window.getSelection();
-    var range = sel.getRangeAt(0);
+  shrinkLeft: function(magnitude) {
+    magnitude = magnitude || 'character';
 
-    range.setStart(sel.anchorNode, sel.anchorOffset + 1);
-    */
+    var sel = this.sel;
+
+    // modify() works on the focus of the selection
+    var endNode = sel.focusNode;
+    var endOffset = sel.focusOffset;
+    sel.collapse(sel.anchorNode, sel.anchorOffset);
+
+    var curSelected = this.sel + '';
+    sel.modify('move', 'forward', magnitude);
+    sel.extend(endNode, endOffset);
+
+    if (this.sel + '' == curSelected && magnitude == 'character') {
+      this.shrinkLeft('word');
+    }
   },
 
   /**
@@ -184,7 +175,7 @@ HtmlContentStrategy.prototype = {
     sel.extend(endNode, endOffset);
 
     if (this.sel + '' == curSelected && magnitude == 'character') {
-      this.extendRight('word');
+      this.extendLeft('word');
     }
   }
 
