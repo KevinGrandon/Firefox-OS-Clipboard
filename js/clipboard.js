@@ -375,13 +375,13 @@ HtmlInputStrategy.prototype = {
   /**
    * Rebuilds selection from knob placement
    */
-  rebuildSelection: function() {
+  rebuildSelection: function(left, right) {
+    var start = document.caretPositionFromPoint(left.cursorX, left.cursorY);
+    var end = document.caretPositionFromPoint(right.cursorX, right.cursorY);
+    //console.log('Debug viewport offsets:', start.offsetNode, start.offset, end.offsetNode, end.offset)
 
-    var leftBound = 0;
-    var rightBound = this.node.value.length;
-
-    this.node.selectionStart = leftBound;
-    this.node.selectionEnd = rightBound;
+    this.node.selectionStart = start.offset;
+    this.node.selectionEnd = end.offset;
   },
 
   /**
