@@ -184,6 +184,7 @@ Clipboard.prototype = {
 
     this[knob].addEventListener(this.START, function(origEvt) {
 
+      this[knob].classList.add('moving');
       origEvt.stopImmediatePropagation();
       origEvt.preventDefault();
 
@@ -191,6 +192,7 @@ Clipboard.prototype = {
       window.addEventListener(this.MOVE, mover);
       window.addEventListener(this.END, function() {
         window.removeEventListener(this.MOVE, mover);
+        this[knob].classList.remove('moving');
       }.bind(this));
     }.bind(this));
   },
@@ -216,21 +218,21 @@ Clipboard.prototype = {
       var thisPosition = this.strategy.bottomRect();
 
       // Break if we meet the word, or did not move on this iteration
+      var buffer = 10;
       if (thisPosition.bottom == lastPosition.bottom &&
         thisPosition.right == lastPosition.right) {
         break;
-      }
-      if (direction == 'right' &&
-        thisPosition.bottom > xy.y &&
-        thisPosition.right > xy.x) {
+      } else if (direction == 'right' &&
+        thisPosition.bottom + buffer > xy.y &&
+        thisPosition.right + buffer > xy.x) {
         break;
       } else if (direction == 'left' &&
-        thisPosition.bottom < xy.y &&
-        thisPosition.right < xy.x) {
+        thisPosition.bottom - buffer < xy.y &&
+        thisPosition.right - buffer < xy.x) {
         break;
       }
 
-     if (direction == 'left') {
+      if (direction == 'left') {
         this.strategy.shrinkRight();
       } else {
         this.strategy.extendRight();
@@ -266,13 +268,15 @@ Clipboard.prototype = {
         thisPosition.left == lastPosition.left) {
         break;
       }
+
+      var buffer = 10;
       if (direction == 'right' && (
-        thisPosition.top > xy.y &&
-        thisPosition.left > xy.x)) {
+        thisPosition.top + buffer > xy.y &&
+        thisPosition.left + buffer > xy.x)) {
         break;
       } else if (direction == 'left' &&
-        thisPosition.top < xy.y &&
-        thisPosition.left < xy.x) {
+        thisPosition.top - buffer < xy.y &&
+        thisPosition.left - buffer < xy.x) {
         break;
       }
 
@@ -309,48 +313,6 @@ Clipboard.prototype = {
 
       self.positionMenu();
     }
-  }
-};function MouseClipboard() {
-  this.START = 'mousedown';
-  this.MOVE = 'mousemove';
-  this.END = 'mouseup';
-  Clipboard.apply(this);
-}
-
-MouseClipboard.prototype = {
-  __proto__: Clipboard.prototype,
-
-  /**
-   * Extracts the X/Y positions for a touch event
-   */
-  coords: function(e) {
-    return {
-      x: e.pageX,
-      y: e.pageY
-    };
-  }
-};
-
-function TouchClipboard() {
-  this.START = 'touchstart';
-  this.MOVE = 'touchmove';
-  this.END = 'touchend';
-  Clipboard.apply(this);
-}
-
-TouchClipboard.prototype = {
-  __proto__: Clipboard.prototype,
-
-  /**
-   * Extracts the X/Y positions for a touch event
-   */
-  coords: function(e) {
-    var touch = e.touches[0];
-
-    return {
-      x: touch.pageX,
-      y: touch.pageY
-    };
   }
 };function HtmlInputStrategy(node) {
   this.node = node;
@@ -513,7 +475,25 @@ HtmlInputStrategy.prototype = {
    * This could be better for textareas
    */
   bottomRect: function() {
-    return this.getRegion();
+    var rects = this.getRegion('getClientRects');
+
+    var bottom;
+    for (var i = 0, rect; rect = rects[i]; i++) {
+      if (!bottom || rect.bottom > bottom.bottom) {
+        bottom = rect;
+      }
+    }
+
+    if (!bottom) {
+      return {};
+    }
+
+    var rangePosition = {
+      bottom: bottom.bottom + window.pageYOffset,
+      right: bottom.right + window.pageXOffset
+    };
+
+    return rangePosition;
   },
 
   /**
@@ -521,11 +501,25 @@ HtmlInputStrategy.prototype = {
    * This could be better for textareas
    */
   topRect: function() {
+    var rects = this.getRegion('getClientRects');
 
-    var testRects = this.getRegion('getClientRects');
-    console.log('TEST RECTS:', testRects)
+    var topmost;
+    for (var i = 0, rect; rect = rects[i]; i++) {
+      if (!topmost || rect.top < topmost.top) {
+        topmost = rect;
+      }
+    }
 
-    return this.getRegion();
+    if (!topmost) {
+      return {};
+    }
+
+    var rangePosition = {
+      top: topmost.top + window.pageYOffset,
+      left: topmost.left + window.pageXOffset
+    };
+
+    return rangePosition;
   },
 
   shrinkRight: function() {
@@ -652,49 +646,125 @@ HtmlContentStrategy.prototype = {
     return coords;
   },
 
-  shrinkRight: function() {
-    this.sel.modify('extend', 'left', 'word');
+  /**
+   * Shrinks the right selection bound
+   */
+  shrinkRight: function(magnitude) {
+    magnitude = magnitude || 'character';
+
+    var curSelected = this.sel + '';
+    this.sel.modify('extend', 'left', magnitude);
+
+    if (this.sel + '' == curSelected && magnitude == 'character') {
+      this.shrinkRight('word');
+    }
   },
 
-  extendRight: function() {
-    this.sel.modify('extend', 'right', 'word');
+  /**
+   * Extends the right selection bound
+   */
+  extendRight: function(magnitude) {
+    magnitude = magnitude || 'character';
+
+    var curSelected = this.sel + '';
+    this.sel.modify('extend', 'right', magnitude);
+
+    if (this.sel + '' == curSelected && magnitude == 'character') {
+      this.extendRight('word');
+    }
   },
 
-  shrinkLeft: function() {
-    var sel = window.getSelection();
-    var range = sel.getRangeAt(0);
+  /**
+   * Shrinks the left selection bound
+   */
+  shrinkLeft: function(magnitude) {
+    magnitude = magnitude || 'character';
 
-    range.setStart(sel.anchorNode, sel.anchorOffset + 1);
-  },
-
-  extendLeft: function() {
-    // Detect if selection is backwards
-    var sel = window.getSelection();
-    var range = document.createRange();
-    range.setStart(sel.anchorNode, sel.anchorOffset);
-    range.setEnd(sel.focusNode, sel.focusOffset);
-    var backwards = range.collapsed;
-    range.detach();
+    var sel = this.sel;
 
     // modify() works on the focus of the selection
     var endNode = sel.focusNode;
     var endOffset = sel.focusOffset;
     sel.collapse(sel.anchorNode, sel.anchorOffset);
 
-    var selDirection;
-    if (backwards) {
-        selDirection = 'forward';
-    } else {
-        selDirection = 'backward';
-    }
-
-    sel.modify('move', selDirection, 'word');
+    var curSelected = this.sel + '';
+    sel.modify('move', 'forward', magnitude);
     sel.extend(endNode, endOffset);
+
+    if (this.sel + '' == curSelected && magnitude == 'character') {
+      this.shrinkLeft('word');
+    }
+  },
+
+  /**
+   * Extends the left selection bound
+   */
+  extendLeft: function(magnitude) {
+    magnitude = magnitude || 'character';
+
+    var sel = this.sel;
+
+    // modify() works on the focus of the selection
+    var endNode = sel.focusNode;
+    var endOffset = sel.focusOffset;
+    sel.collapse(sel.anchorNode, sel.anchorOffset);
+
+    var curSelected = this.sel + '';
+    sel.modify('move', 'backward', magnitude);
+    sel.extend(endNode, endOffset);
+
+    if (this.sel + '' == curSelected && magnitude == 'character') {
+      this.extendLeft('word');
+    }
   }
 
-};  if ('ontouchstart' in window) {
-    var copyPaste = new TouchClipboard();
-  } else {
-    var copyPaste = new MouseClipboard();
+};function MouseClipboard() {
+  this.START = 'mousedown';
+  this.MOVE = 'mousemove';
+  this.END = 'mouseup';
+  Clipboard.apply(this);
+}
+
+MouseClipboard.prototype = {
+  __proto__: Clipboard.prototype,
+
+  /**
+   * Extracts the X/Y positions for a touch event
+   */
+  coords: function(e) {
+    return {
+      x: e.pageX,
+      y: e.pageY
+    };
   }
+};
+
+function TouchClipboard() {
+  this.START = 'touchstart';
+  this.MOVE = 'touchmove';
+  this.END = 'touchend';
+  Clipboard.apply(this);
+}
+
+TouchClipboard.prototype = {
+  __proto__: Clipboard.prototype,
+
+  /**
+   * Extracts the X/Y positions for a touch event
+   */
+  coords: function(e) {
+    var touch = e.touches[0];
+
+    return {
+      x: touch.pageX,
+      y: touch.pageY
+    };
+  }
+};
+
+if ('ontouchstart' in window) {
+  var copyPaste = new TouchClipboard();
+} else {
+  var copyPaste = new MouseClipboard();
+}
 }());

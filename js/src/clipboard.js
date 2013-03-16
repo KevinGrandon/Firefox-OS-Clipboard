@@ -183,6 +183,7 @@ Clipboard.prototype = {
 
     this[knob].addEventListener(this.START, function(origEvt) {
 
+      this[knob].classList.add('moving');
       origEvt.stopImmediatePropagation();
       origEvt.preventDefault();
 
@@ -190,6 +191,7 @@ Clipboard.prototype = {
       window.addEventListener(this.MOVE, mover);
       window.addEventListener(this.END, function() {
         window.removeEventListener(this.MOVE, mover);
+        this[knob].classList.remove('moving');
       }.bind(this));
     }.bind(this));
   },
