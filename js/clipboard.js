@@ -5,7 +5,7 @@
 function Clipboard() {
   this.clipboard = '';
 
-  this.MENU_ADJUST_TOP = -45;
+  this.MENU_ADJUST_TOP = -30;
   this.MENU_ADJUST_LEFT = 20;
   this.KNOB_SIZE = 30;
 
@@ -78,8 +78,8 @@ Clipboard.prototype = {
     // Get the region of the selection
     var targetArea = target.getBoundingClientRect();
     var leftKnobPos = {
-      top: targetArea.top + window.pageYOffset,
-      left: targetArea.left + window.pageXOffset
+      top: targetArea.top + window.pageYOffset - 15,
+      left: targetArea.left + window.pageXOffset - 20
     };
 
     var rightKnobPos = this.strategy.endPosition();
@@ -188,7 +188,7 @@ Clipboard.prototype = {
       origEvt.stopImmediatePropagation();
       origEvt.preventDefault();
 
-      var mover = this.getKnobMover(this[knob]);
+      var mover = this.getKnobMover(name);
       window.addEventListener(this.MOVE, mover);
       window.addEventListener(this.END, function() {
         window.removeEventListener(this.MOVE, mover);
@@ -291,21 +291,19 @@ Clipboard.prototype = {
   /**
    * Is called when the user has tapped on a knob
    * and moves their finger around.
+   * @param {String} knob name (left or right)
    */
-  getKnobMover: function(el) {
+  getKnobMover: function(name) {
     var self = this;
+    var el = this[name + 'Knob'];
 
     return function(evt) {
       evt.stopImmediatePropagation();
 
       var xy = self.coords(evt);
 
-      if (el.classList.contains('right')) {
-        self.rightKnobHandler(xy, el);
-      } else {
-        self.leftKnobHandler(xy, el);
-      }
-
+      // Dynamically call leftKnobHandler or rightKnobHandler
+      self[name + 'KnobHandler'](xy, el);
 
       el.style.left = (xy.x - self.KNOB_SIZE/2) + 'px';
       el.style.top = (xy.y - self.KNOB_SIZE/2) + 'px';
