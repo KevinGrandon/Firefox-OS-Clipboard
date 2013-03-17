@@ -381,8 +381,12 @@ HtmlInputStrategy.prototype = {
     var end = document.caretPositionFromPoint(right.cursorX, right.cursorY);
     //console.log('Debug viewport offsets:', start.offsetNode, start.offset, end.offsetNode, end.offset)
 
-    this.node.selectionStart = start.offset;
-    this.node.selectionEnd = end.offset;
+    // Extend the range a bit so there isn't a big gap
+    // We do the same for the content strategy
+    var extension = 2;
+
+    this.node.selectionStart = start.offset - extension;
+    this.node.selectionEnd = end.offset + extension;
   },
 
   /**
