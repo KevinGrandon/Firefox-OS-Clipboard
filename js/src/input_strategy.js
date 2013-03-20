@@ -84,6 +84,7 @@ HtmlInputStrategy.prototype = {
 
   /**
    * Gets the region of the selectedText inside of an input
+   * This is essentially trying to mimic IE's createTextRange
    */
   getRegion: function(method) {
 
