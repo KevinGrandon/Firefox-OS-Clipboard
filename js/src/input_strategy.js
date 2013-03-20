@@ -97,8 +97,8 @@ HtmlInputStrategy.prototype = {
         height = getInputCSS('height', true);
 
         // Styles to simulate a node in an input field
-    var cssDefaultStyles = 'white-space:pre;padding:0;margin:0;',
-        listOfModifiers = ['direction', 'font-family', 'font-size',
+    var cssDefaultStyles = 'white-space:pre; padding:0; margin:0;';
+    var listOfModifiers = ['direction', 'font-family', 'font-size',
         'font-size-adjust', 'font-variant', 'font-weight', 'font-style',
         'letter-spacing', 'line-height', 'text-align', 'text-indent',
         'text-transform', 'word-wrap', 'word-spacing'];
@@ -187,7 +187,12 @@ HtmlInputStrategy.prototype = {
       return isnumber ? parseFloat(val) : val;
     }
 
-    return returnValue;
+    return {
+      top: returnValue.top + window.pageYOffset,
+      bottom: returnValue.bottom + window.pageYOffset,
+      left: returnValue.left + window.pageXOffset,
+      right: returnValue.right + window.pageXOffset
+    };
   },
 
    /**
@@ -198,8 +203,8 @@ HtmlInputStrategy.prototype = {
   endPosition: function() {
     var region = this.getRegion();
     return {
-      top: region.bottom + window.pageYOffset,
-      left: region.right + window.pageYOffset
+      top: region.bottom,
+      left: region.right
     };
   },
 

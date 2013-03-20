@@ -81,7 +81,7 @@ HtmlContentStrategy.prototype = {
   },
 
    /**
-   * Gets fthe outer rectangle coordinates of the selction
+   * Gets the outer rectangle coordinates of the selction
    * Normalizes data to absolute values with window offsets.
    */
   endPosition: function() {
