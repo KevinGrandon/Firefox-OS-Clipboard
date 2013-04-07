@@ -61,8 +61,8 @@ Clipboard.prototype = {
       this.teardown();
     }
 
-    //dump('Got move!' + xy.x + ' - ' + xy.y)
-    //dump('Got move!')
+    //console.log('Got move!' + xy.x + ' - ' + xy.y)
+    //console.log('Got move!')
   },
 
   onEnd: function(e) {

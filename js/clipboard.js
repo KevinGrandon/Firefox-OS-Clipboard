@@ -62,8 +62,8 @@ Clipboard.prototype = {
       this.teardown();
     }
 
-    //dump('Got move!' + xy.x + ' - ' + xy.y)
-    //dump('Got move!')
+    //console.log('Got move!' + xy.x + ' - ' + xy.y)
+    //console.log('Got move!')
   },
 
   onEnd: function(e) {
@@ -391,6 +391,7 @@ HtmlInputStrategy.prototype = {
 
   /**
    * Gets the region of the selectedText inside of an input
+   * This is essentially trying to mimic IE's createTextRange
    */
   getRegion: function(method) {
 
